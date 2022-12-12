@@ -8,6 +8,7 @@ use actix_web::http::header::ContentType;
 use bytes::Bytes;
 use async_stream::{try_stream, AsyncStream};
 use std::io::prelude::*;
+use serde::Serialize;
 
 async fn greet(req: HttpRequest) -> impl Responder {
     let name = req.match_info().get("name").unwrap_or("World");
@@ -30,7 +31,7 @@ fn extract_filename(e: Option<DirEntry>) -> Option<String> {
 
 static MUSIC_PATH: &str = "V:\\MusicPhotos\\music";
 
-fn as_string<T>(data: *T) -> String {
+fn as_string<T:Serialize>(data: &T) -> String {
     return serde_json::to_string(data).unwrap()
 }
 #[get("/list")]
