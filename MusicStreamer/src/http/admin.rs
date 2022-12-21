@@ -34,13 +34,18 @@ static MUSIC_PATH: &str = "V:\\MusicPhotos\\music";
 fn as_string<T:Serialize>(data: &T) -> String {
     return serde_json::to_string(data).unwrap()
 }
+
+
+fn music_paths() -> Vec<String> {
+    fs::read_dir(MUSIC_PATH)
+        .unwrap()
+        .filter_map(|e| extract_filename(e.ok()))
+        .collect::<Vec<String>>()
+}
+
 #[get("/list")]
 async fn list(_: HttpRequest) -> impl Responder {
-    let paths =
-        fs::read_dir(MUSIC_PATH)
-            .unwrap()
-            .filter_map(|e| extract_filename(e.ok()))
-            .collect::<Vec<String>>();
+    let paths = music_paths();
 
     return HttpResponse::Ok()
         .content_type(ContentType::json())
@@ -66,7 +71,7 @@ fn music_response(x: PathBuf) -> HttpResponse {
 //#[get("/play")]
 async fn play(req: HttpRequest) -> HttpResponse {
     let music = req.match_info().get("music").unwrap();
-    return music_response(PathBuf::from(format!("{}\\{}", MUSIC_PATH, music)))
+    return music_response(PathBuf::from(format!("{}\\{}", MUSIC_PATH, music)));
 }
 
 #[get("/schedule")]
@@ -79,7 +84,6 @@ pub async fn start_server_at(host_port: String) -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(list)
-            //.service(play)
             .service(schedule)
             .route("/play/{music}", web::get().to(play))
     }).bind(host_port)?
