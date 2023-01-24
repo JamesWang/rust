@@ -8,6 +8,7 @@ use actix_web::http::header::ContentType;
 use bytes::Bytes;
 use async_stream::{try_stream, AsyncStream};
 use std::io::prelude::*;
+use std::ptr::addr_of_mut;
 use std::sync::Arc;
 use actix_web::cookie::time::format_description::well_known::iso8601::Config;
 use partial_application::partial;
@@ -48,8 +49,8 @@ fn music_paths(music_path: String) -> Vec<String> {
 }
 
 //#[get("/list")]
-async fn list_music(music_path: String) -> impl Responder {
-    let paths = music_paths(music_path);
+async fn list_music(data: web::Data<MusicConf>) -> impl Responder {
+    let paths = music_paths(data.music_path.clone());
 
     return HttpResponse::Ok()
         .content_type(ContentType::json())
@@ -72,9 +73,9 @@ fn music_response(x: PathBuf) -> HttpResponse {
 }
 
 //#[get("/play")]
-async fn play(music_path: String, req: HttpRequest) -> HttpResponse {
+async fn play(data: web::Data<MusicConf>, req: HttpRequest) -> HttpResponse {
     let music = req.match_info().get("music").unwrap();
-    return music_response(PathBuf::from(format!("{}\\{}", music_path, music)))
+    return music_response(PathBuf::from(format!("{}\\{}", data.music_path, music)))
 }
 
 #[get("/schedule")]
@@ -84,15 +85,13 @@ async fn schedule(req: HttpRequest) -> impl Responder {
 
 
 pub async fn start_server_at(host_port: String, music_path: String) -> std::io::Result<()> {
+    let data = web::Data::new(MusicConf{music_path});
     HttpServer::new(move|| {
-        let mp1 = music_path.clone();
-        let mp2 = music_path.clone();
         App::new()
+            .app_data(data.clone())
             .service(web::resource("/list")
-                         .route(web::get().to(move||{list_music(mp1.clone().to_string())})))
+                .route(web::get().to(list_music)))
             .service(schedule)
-            .route("/play/{music}", web::get().to(move|r|{play(mp2.clone().to_string(), r)}))
-    }).bind(host_port)?
-        .run()
-        .await
+            .route("/play/{music}", web::get().to(play))
+    }).bind(host_port)?.run().await
 }
