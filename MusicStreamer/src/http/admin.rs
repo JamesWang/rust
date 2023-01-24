@@ -40,13 +40,16 @@ fn as_string<T:Serialize>(data: &T) -> String {
     return serde_json::to_string(data).unwrap()
 }
 
+fn music_paths(music_path: String) -> Vec<String> {
+    fs::read_dir(music_path)
+        .unwrap()
+        .filter_map(|e| extract_filename(e.ok()))
+        .collect::<Vec<String>>()
+}
+
 //#[get("/list")]
 async fn list_music(music_path: String) -> impl Responder {
-    let paths =
-        fs::read_dir(music_path)
-            .unwrap()
-            .filter_map(|e| extract_filename(e.ok()))
-            .collect::<Vec<String>>();
+    let paths = music_paths(music_path);
 
     return HttpResponse::Ok()
         .content_type(ContentType::json())
@@ -63,7 +66,6 @@ fn music_response(x: PathBuf) -> HttpResponse {
                 break;
             }
             yield Bytes::copy_from_slice(&chunk[..n]);
-            //thread::sleep(time::Duration::from_millis(500));
         }
     };
     HttpResponse::Ok().content_type("audio/mpeg").streaming(stream)
