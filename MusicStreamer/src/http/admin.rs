@@ -8,7 +8,15 @@ use actix_web::http::header::ContentType;
 use bytes::Bytes;
 use async_stream::{try_stream, AsyncStream};
 use std::io::prelude::*;
+use std::ptr::addr_of_mut;
+use std::sync::Arc;
+use actix_web::cookie::time::format_description::well_known::iso8601::Config;
+use partial_application::partial;
 use serde::Serialize;
+
+pub struct MusicConf {
+    pub(crate) music_path: String
+}
 
 async fn greet(req: HttpRequest) -> impl Responder {
     let name = req.match_info().get("name").unwrap_or("World");
@@ -29,18 +37,28 @@ fn extract_filename(e: Option<DirEntry>) -> Option<String> {
     e.filter(is_file).and_then(|e| to_filename(&e))
 }
 
-static MUSIC_PATH: &str = "V:\\MusicPhotos\\music";
-
 fn as_string<T:Serialize>(data: &T) -> String {
     return serde_json::to_string(data).unwrap()
 }
-#[get("/list")]
-async fn list(_: HttpRequest) -> impl Responder {
-    let paths =
-        fs::read_dir(MUSIC_PATH)
-            .unwrap()
-            .filter_map(|e| extract_filename(e.ok()))
-            .collect::<Vec<String>>();
+
+fn music_paths(music_path: &String) -> Vec<String> {
+    fs::read_dir(music_path)
+        .unwrap()
+        .filter_map(|e| extract_filename(e.ok()))
+        .collect::<Vec<String>>()
+}
+
+//#[get("/list")]
+async fn list_music(data: web::Data<MusicConf>) -> impl Responder {
+    let paths = music_paths(&data.music_path.clone());
+
+    return HttpResponse::Ok()
+        .content_type(ContentType::json())
+        .body(as_string(&paths));
+}
+
+async fn list_music2(music_path: String) -> impl Responder {
+    let paths = music_paths(&music_path);
 
     return HttpResponse::Ok()
         .content_type(ContentType::json())
@@ -57,16 +75,15 @@ fn music_response(x: PathBuf) -> HttpResponse {
                 break;
             }
             yield Bytes::copy_from_slice(&chunk[..n]);
-            //thread::sleep(time::Duration::from_millis(500));
         }
     };
     HttpResponse::Ok().content_type("audio/mpeg").streaming(stream)
 }
 
 //#[get("/play")]
-async fn play(req: HttpRequest) -> HttpResponse {
+async fn play(data: web::Data<MusicConf>, req: HttpRequest) -> HttpResponse {
     let music = req.match_info().get("music").unwrap();
-    return music_response(PathBuf::from(format!("{}\\{}", MUSIC_PATH, music)))
+    return music_response(PathBuf::from(format!("{}\\{}", data.music_path, music)))
 }
 
 #[get("/schedule")]
@@ -75,14 +92,25 @@ async fn schedule(req: HttpRequest) -> impl Responder {
 }
 
 
-pub async fn start_server_at(host_port: String) -> std::io::Result<()> {
-    HttpServer::new(|| {
+pub async fn start_server_at(host_port: &String, music_path: &String) -> std::io::Result<()> {
+    let data = web::Data::new(MusicConf{music_path: music_path.clone()});
+    HttpServer::new(move|| {
         App::new()
-            .service(list)
-            //.service(play)
+            .app_data(data.clone())
+            .service(web::resource("/list")
+                .route(web::get().to(list_music)))
             .service(schedule)
             .route("/play/{music}", web::get().to(play))
-    }).bind(host_port)?
-        .run()
-        .await
+    }).bind(host_port)?.run().await
+}
+
+pub async fn start_server_at2(host_port: &String, music_path: String) -> std::io::Result<()> {
+    HttpServer::new(move|| {
+        let mp = music_path.clone();
+        App::new()
+            .service(web::resource("/list")
+                .route(web::get().to(move|| {list_music2(mp.clone())})))
+            .service(schedule)
+            .route("/play/{music}", web::get().to(play))
+    }).bind(host_port)?.run().await
 }
