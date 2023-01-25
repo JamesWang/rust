@@ -41,7 +41,7 @@ fn as_string<T:Serialize>(data: &T) -> String {
     return serde_json::to_string(data).unwrap()
 }
 
-fn music_paths(music_path: String) -> Vec<String> {
+fn music_paths(music_path: &String) -> Vec<String> {
     fs::read_dir(music_path)
         .unwrap()
         .filter_map(|e| extract_filename(e.ok()))
@@ -50,7 +50,15 @@ fn music_paths(music_path: String) -> Vec<String> {
 
 //#[get("/list")]
 async fn list_music(data: web::Data<MusicConf>) -> impl Responder {
-    let paths = music_paths(data.music_path.clone());
+    let paths = music_paths(&data.music_path.clone());
+
+    return HttpResponse::Ok()
+        .content_type(ContentType::json())
+        .body(as_string(&paths));
+}
+
+async fn list_music2(music_path: String) -> impl Responder {
+    let paths = music_paths(&music_path);
 
     return HttpResponse::Ok()
         .content_type(ContentType::json())
@@ -84,13 +92,24 @@ async fn schedule(req: HttpRequest) -> impl Responder {
 }
 
 
-pub async fn start_server_at(host_port: String, music_path: String) -> std::io::Result<()> {
-    let data = web::Data::new(MusicConf{music_path});
+pub async fn start_server_at(host_port: &String, music_path: &String) -> std::io::Result<()> {
+    let data = web::Data::new(MusicConf{music_path: music_path.clone()});
     HttpServer::new(move|| {
         App::new()
             .app_data(data.clone())
             .service(web::resource("/list")
                 .route(web::get().to(list_music)))
+            .service(schedule)
+            .route("/play/{music}", web::get().to(play))
+    }).bind(host_port)?.run().await
+}
+
+pub async fn start_server_at2(host_port: &String, music_path: String) -> std::io::Result<()> {
+    HttpServer::new(move|| {
+        let mp = music_path.clone();
+        App::new()
+            .service(web::resource("/list")
+                .route(web::get().to(move|| {list_music2(mp.clone())})))
             .service(schedule)
             .route("/play/{music}", web::get().to(play))
     }).bind(host_port)?.run().await
