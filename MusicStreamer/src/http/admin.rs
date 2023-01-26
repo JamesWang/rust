@@ -58,7 +58,7 @@ async fn list_music(data: web::Data<MusicConf>) -> impl Responder {
 }
 
 async fn list_music2(music_path: String) -> impl Responder {
-    let paths = music_paths(&music_path);
+    let paths = music_paths(&music_path.to_string());
 
     return HttpResponse::Ok()
         .content_type(ContentType::json())
@@ -104,13 +104,25 @@ pub async fn start_server_at(host_port: &String, music_path: &String) -> std::io
     }).bind(host_port)?.run().await
 }
 
-pub async fn start_server_at2(host_port: &String, music_path: String) -> std::io::Result<()> {
+pub async fn start_server_at2(host_port: &str, music_path: String) -> std::io::Result<()> {
     HttpServer::new(move|| {
-        let mp = music_path.clone();
+        let mmp = music_path.clone();
         App::new()
             .service(web::resource("/list")
-                .route(web::get().to(move|| {list_music2(mp.clone())})))
+                .route(web::get().to(move || { list_music2(mmp.to_string()) })))
             .service(schedule)
             .route("/play/{music}", web::get().to(play))
     }).bind(host_port)?.run().await
+}
+
+pub async fn start_server_at3(host_port: &str, music_path: String) -> std::io::Result<()> {
+    let http_server = move|mp: String| { move|| {
+        let mmp = mp.clone();
+        App::new()
+            .service(web::resource("/list")
+                .route(web::get().to(move|| { list_music2(mmp.to_string()) })))
+            .service(schedule)
+            .route("/play/{music}", web::get().to(play))
+    }};
+    HttpServer::new(http_server(music_path)).bind(host_port)?.run().await
 }
