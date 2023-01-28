@@ -120,7 +120,7 @@ pub async fn start_server_at3(host_port: &str, music_path: String) -> std::io::R
         let mmp = mp.clone();
         App::new()
             .service(web::resource("/list")
-                .route(web::get().to(move|| { list_music2(mmp.to_string()) })))
+                .route(web::get().to(move|| { list_music2(mmp.clone()) })))
             .service(schedule)
             .route("/play/{music}", web::get().to(play))
     }};
