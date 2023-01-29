@@ -1,4 +1,6 @@
 mod http;
+mod jokebox;
+mod server;
 
 use std::sync::Arc;
 use actix_web::{App, HttpServer, web};
