@@ -3,7 +3,7 @@ use std::net::TcpListener;
 use std::ops::Deref;
 use actix_rt::net::TcpStream;
 
-trait IncomingHandler {
+pub(crate) trait IncomingHandler {
     fn handle(&self, data: [u8; 100]);
 }
 
