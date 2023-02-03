@@ -21,7 +21,8 @@ impl  MusicInfo {
 
     fn list(&self, mut stream: &TcpStream) -> () {
         let paths = &music_paths(&self.music_path.clone());
-        stream.write(paths.join("\n").as_bytes()).expect("TODO: panic message");
+        let result = paths.join("\n");
+        stream.write(result.as_bytes()).expect("TODO: panic message");
         return 
     }
 
