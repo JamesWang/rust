@@ -1,15 +1,28 @@
+use std::io;
+use std::io::{IoSlice, Read, Write};
+use std::net::TcpStream;
 use std::str::Split;
 use actix_rt::spawn;
+use actix_web::body::to_bytes;
+use crate::admin::music_paths;
 use super::tcp_server::IncomingHandler;
 
-impl MusicCommands {
+const MUSIC_PATH: &str = "V:\\MusicPhotos\\music";
+
+struct MusicInfo {
+    music_path: String
+}
+
+impl  MusicInfo {
     fn split_data(cmd_full: &str) -> (&str, Option<&str>) {
-        split: Vec<&str> = cmd_full.split(" ").collect();
+        let split: Vec<&str> = cmd_full.split(" ").collect();
         (split[0], if split.len() > 1 {Some(split[1])} else {None})
     }
 
-    fn list(&self) -> Vec<String> {
-        Vec::new()
+    fn list(&self, mut stream: &TcpStream) -> () {
+        let paths = &music_paths(&self.music_path.clone());
+        stream.write(paths.join("\n").as_bytes()).expect("TODO: panic message");
+        return 
     }
 
     fn play(&self){
@@ -18,23 +31,27 @@ impl MusicCommands {
     fn pause(&self){
     }
 
-    fn schedule(&self, tracks: Vec<String>){
+    fn schedule(&self, tracks: Vec<String>, mut stream: &TcpStream){
 
     }
 }
 
-impl IncomingHandler for MusicCommands {
+impl IncomingHandler for MusicInfo {
 
+    fn handle(&self, mut stream: &TcpStream) {
+        let mut buffer = [0; 100];
+        stream.read(&mut buffer).unwrap();
 
-    fn handle(&self, data: [u8; 100]) {
-        let cmd_full: &str = str::from_utf8(&data);
-        let (cmd, arg) = split_data(cmd_full);
+        let cmd_full: &String = &String::from_utf8(buffer.to_vec()).unwrap();
+        println!("Received from client {}", cmd_full);
+        let (cmd, arg) = MusicInfo::split_data(cmd_full);
         match cmd {
-            "/list" => "",
-            "/play" => "",
-            "/pause" => "",
-            "schedule" => ""
-        }
+            "/list" => self.list(stream),
+            "/play" => self.play(),
+            "/pause" => self.pause(),
+            "schedule" => self.schedule(Vec::new(), stream),
+            _ => {}
+        };
         ()
     }
 }
