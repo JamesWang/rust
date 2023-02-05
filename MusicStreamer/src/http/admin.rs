@@ -41,7 +41,7 @@ fn as_string<T:Serialize>(data: &T) -> String {
     return serde_json::to_string(data).unwrap()
 }
 
-fn music_paths(music_path: &String) -> Vec<String> {
+pub fn music_paths(music_path: &String) -> Vec<String> {
     fs::read_dir(music_path)
         .unwrap()
         .filter_map(|e| extract_filename(e.ok()))
@@ -105,6 +105,7 @@ pub async fn start_server_at(host_port: &String, music_path: &String) -> std::io
 }
 
 pub async fn start_server_at2(host_port: &str, music_path: String) -> std::io::Result<()> {
+    println!("Http Listening on {host_port}");
     HttpServer::new(move|| {
         let mmp = music_path.clone();
         App::new()
