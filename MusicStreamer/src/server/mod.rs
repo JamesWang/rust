@@ -1,2 +1,2 @@
 pub mod tcp_server;
-mod music_commands;
+pub mod music_commands;

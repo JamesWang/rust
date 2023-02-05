@@ -9,7 +9,7 @@ use super::tcp_server::IncomingHandler;
 
 const MUSIC_PATH: &str = "V:\\MusicPhotos\\music";
 
-struct MusicInfo {
+pub struct MusicInfo {
     music_path: String
 }
 
@@ -20,9 +20,11 @@ impl  MusicInfo {
     }
 
     fn list(&self, mut stream: &TcpStream) -> () {
+        println!("Handling /List");
         let paths = &music_paths(&self.music_path.clone());
         let result = paths.join("\n");
-        stream.write(result.as_bytes()).expect("TODO: panic message");
+        stream.write(result.as_bytes()).unwrap();
+        stream.flush().unwrap();
         return 
     }
 
@@ -38,14 +40,17 @@ impl  MusicInfo {
 }
 
 impl IncomingHandler for MusicInfo {
-
+    fn new(music_path: String) -> MusicInfo {
+        MusicInfo { music_path }
+    }
     fn handle(&self, mut stream: &TcpStream) {
         let mut buffer = [0; 100];
-        stream.read(&mut buffer).unwrap();
+        let read_cnt = stream.read(&mut buffer).unwrap();
 
-        let cmd_full: &String = &String::from_utf8(buffer.to_vec()).unwrap();
-        println!("Received from client {}", cmd_full);
+        let cmd_full: &String = &String::from_utf8(buffer[0..read_cnt].to_owned()).unwrap().trim().to_string();
+        println!("Received from client {read_cnt} {cmd_full}");
         let (cmd, arg) = MusicInfo::split_data(cmd_full);
+        println!("before switch {cmd}");
         match cmd {
             "/list" => self.list(stream),
             "/play" => self.play(),

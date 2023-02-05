@@ -1,17 +1,18 @@
 use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{Incoming, TcpListener, TcpStream};
 use std::ops::Deref;
+use crate::server::music_commands::MusicInfo;
 
 pub(crate) trait IncomingHandler {
+    fn new(t: String) -> Self;
     fn handle(&self, stream: &TcpStream);
 }
 
-fn listen_on(port: u32, incoming_handler: &impl IncomingHandler) {
-    let conn_listener: TcpListener = TcpListener::bind(format!("127.0.0.1:{port}")).unwrap();
+pub fn listen_on(port: u32, incoming_handler: MusicInfo) {
+    let conn_listener: TcpListener = TcpListener::bind(format!("0.0.0.0:{port}")).unwrap();
     println!("Running on port {port}");
     for stream in conn_listener.incoming() {
-        let mut stream  = &stream.unwrap();
         println!("Connection established");
-        incoming_handler.handle(stream)
+        incoming_handler.handle(&stream.unwrap())
     }
 }
