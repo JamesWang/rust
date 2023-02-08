@@ -9,6 +9,7 @@ use super::tcp_server::IncomingHandler;
 
 const MUSIC_PATH: &str = "V:\\MusicPhotos\\music";
 
+#[derive(Debug, Clone)]
 pub struct MusicInfo {
     music_path: String
 }
