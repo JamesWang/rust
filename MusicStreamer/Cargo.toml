@@ -12,3 +12,6 @@ async-stream = "0.3.3"
 bytes = "1.2.1"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+partial_application = "0.2.1"
+atomic-counter = "1.0.1"
+threadpool = "1.8.1"
