@@ -6,3 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-web = "4.4.1"
+actix-rt = "2.9.0"
+
+#Environment variable access lib
+dotenv = "0.15.0"
+
+sqlx = {version = "0.7.3", default-features = false, features = ["postgres", "runtime-tokio-native-tls", "macros", "chrono"]}
+
+serde = { version = "1.0.196", features = ["derive"] }
+chrono = {version = "0.4.33",  features = ["serde"]}
+#openssl = {version = "0.10.55", features = ["vendored"]}
+
+[[bin]]
+name = "iter1"

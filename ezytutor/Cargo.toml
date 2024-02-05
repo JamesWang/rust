@@ -7,5 +7,4 @@ edition = "2021"
 members = [ "tutor-db","tutor-nodb"]
 
 [dependencies]
-actix-web = "4.4.1"
-actix-rt = "2.9.0"
+
