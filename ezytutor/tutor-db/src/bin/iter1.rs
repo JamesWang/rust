@@ -18,8 +18,7 @@ async fn main() -> io::Result<()> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
     let db_pool = PgPool::connect(&database_url).await.unwrap();
     let course_rows = sqlx::query!(
-        r#"SELECT course_id, tutor_id, course_name, posted_time FROM ezy_course_c4 WHERE course_id = $1"#,
-        1,
+        r#"SELECT course_id, tutor_id, course_name, posted_time FROM ezy_course_c4"#,
     ).fetch_all(&db_pool).await.unwrap();
 
     let mut courses_list = vec![];
@@ -31,6 +30,6 @@ async fn main() -> io::Result<()> {
             posted_time: Some(chrono::NaiveDateTime::from(course_row.posted_time.unwrap())),
         });
     }
-    println!("Courses = {:?}", courses_list);
+    courses_list.iter().for_each(|one| println!("Course = {:?}", one));
     Ok(())
 }
