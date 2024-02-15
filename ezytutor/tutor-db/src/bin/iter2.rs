@@ -40,3 +40,30 @@ async fn main() -> io::Result<()>{
     };
     HttpServer::new(app).bind("0.0.0.0:3000")?.run().await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::http::StatusCode;
+    use chrono::NaiveDate;
+    use dotenv::dotenv;
+    use sqlx::postgres::PgPool;
+    use std::env;
+    use std::sync::Mutex;
+    use crate::handlers::get_course_for_tutor;
+
+    #[actix_rt::test]
+    async fn get_all_courses_success(){
+        dotenv().ok();
+        let database_rul = env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
+        let pool: PgPool = PgPool::connect(&database_rul).await.unwrap();
+        let app_state: web::Data<AppState> = web::Data::new(AppState{
+            health_check_response: "".to_string(),
+            visit_count: Mutex::new(0),
+            db: pool,
+        });
+        let tutor_id: web::Path<i32> = web::Path::from(1);
+        let resp = get_course_for_tutor(app_state, tutor_id).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+}

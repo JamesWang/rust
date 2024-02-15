@@ -19,17 +19,15 @@ async fn main() -> io::Result<()> {
     let db_pool = PgPool::connect(&database_url).await.unwrap();
     let course_rows = sqlx::query!(
         r#"SELECT course_id, tutor_id, course_name, posted_time FROM ezy_course_c4"#,
-    ).fetch_all(&db_pool).await.unwrap();
-
-    let mut courses_list = vec![];
-    for course_row in course_rows {
-        courses_list.push(Course {
-           course_id: course_row.course_id,
+    ).fetch_all(&db_pool)
+        .await.unwrap()
+        .into_iter()
+        .map(|course_row| Course{
+            course_id: course_row.course_id,
             tutor_id: course_row.tutor_id,
             course_name: course_row.course_name,
             posted_time: Some(chrono::NaiveDateTime::from(course_row.posted_time.unwrap())),
-        });
-    }
-    courses_list.iter().for_each(|one| println!("Course = {:?}", one));
+        }).collect::<Vec<_>>();
+    course_rows.iter().for_each(|one| println!("Course = {:?}", one));
     Ok(())
 }
