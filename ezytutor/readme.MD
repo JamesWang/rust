@@ -18,3 +18,11 @@
       .await
       .unwrap();
       ```
+####
+calling with:
+* http://localhost:3000/courses/1
+
+### impl blocks
+An ***impl*** block is Rust's way of allowing developers to specify functions associated with a data type.
+This is the only way in Rust to define a function that can be invoked on an instance of the type in a 
+method-call syntax.
